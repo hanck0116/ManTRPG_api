@@ -6,6 +6,7 @@ import { persistApiKey, removeApiKey, type RuntimeApiSettings } from './apiKeySe
 import { testClientApiKey } from './llmClientRuntime.js';
 import { renderApp } from './render.js';
 import { resetSessionState, uiState, type AppTab } from './uiState.js';
+import { resolveAppUrl } from './basePath.js';
 
 const app = getAppRoot();
 let currentTab: AppTab = 'play';
@@ -94,7 +95,6 @@ function bindSession() {
 }
 
 if ('serviceWorker' in navigator) {
-  const serviceWorkerUrl = new URL('service-worker.js', import.meta.env.BASE_URL ? new URL(import.meta.env.BASE_URL, window.location.href) : window.location.href);
-  void navigator.serviceWorker.register(serviceWorkerUrl.href);
+  void navigator.serviceWorker.register(resolveAppUrl('service-worker.js'));
 }
 render();
