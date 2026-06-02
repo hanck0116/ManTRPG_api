@@ -1,6 +1,8 @@
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const SHELL_CACHE = `mantrpg-shell-${CACHE_VERSION}`;
-const SHELL_FILES = ['/', '/index.html', '/manifest.webmanifest', '/icons/icon.svg', '/icons/maskable-icon.svg'];
+const BASE_PATH = new URL(self.registration.scope).pathname;
+const shellUrl = (path) => new URL(path, self.registration.scope).href;
+const SHELL_FILES = [shellUrl('./'), shellUrl('index.html'), shellUrl('manifest.webmanifest'), shellUrl('icons/icon.svg'), shellUrl('icons/maskable-icon.svg')];
 const PROVIDER_HOSTS = ['api.groq.com', 'generativelanguage.googleapis.com', 'openrouter.ai'];
 
 self.addEventListener('install', (event) => {
@@ -27,17 +29,17 @@ function isNavigationRequest(request) {
 
 function isStaticAsset(request) {
   const url = new URL(request.url);
-  return request.method === 'GET' && url.origin === self.location.origin && /\.(?:js|css|svg|png|webmanifest|ico)$/.test(url.pathname);
+  return request.method === 'GET' && url.origin === self.location.origin && url.pathname.startsWith(BASE_PATH) && /\.(?:js|css|svg|png|webmanifest|ico)$/.test(url.pathname);
 }
 
 async function networkFirstNavigation(request) {
   const cache = await caches.open(SHELL_CACHE);
   try {
     const response = await fetch(request);
-    cache.put('/index.html', response.clone());
+    cache.put(shellUrl('index.html'), response.clone());
     return response;
   } catch {
-    return (await cache.match('/index.html')) || (await cache.match('/')) || Response.error();
+    return (await cache.match(shellUrl('index.html'))) || (await cache.match(shellUrl('./'))) || Response.error();
   }
 }
 
