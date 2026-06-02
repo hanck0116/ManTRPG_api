@@ -1,5 +1,5 @@
 export function getBaseUrl(): URL {
-  return new URL(import.meta.env.BASE_URL || './', window.location.href);
+  return new URL('./', document.baseURI || window.location.href);
 }
 
 export function resolveAppUrl(path: string): string {

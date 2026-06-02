@@ -23,3 +23,9 @@ declare module 'node:http' {
     listen(port: number, callback?: () => void): void;
   };
 }
+
+declare module 'node:fs' {
+  export function readFileSync(path: string, encoding: BufferEncoding): string;
+}
+
+type BufferEncoding = 'utf8' | 'utf-8' | 'ascii' | 'base64' | 'base64url' | 'binary' | 'hex' | 'latin1' | 'ucs-2' | 'ucs2' | 'utf16le';

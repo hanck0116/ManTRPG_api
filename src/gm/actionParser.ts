@@ -3,8 +3,8 @@ import type { ParsedAction } from '../engine/judgment.js';
 import type { MinimalApiState } from '../state/sessionState.js';
 
 const makeAction = (partial: Omit<ParsedAction, 'rawText'>, rawText: string): ParsedAction => ({ ...partial, rawText });
-const hasAny = (text: string, words: string[]): boolean => words.some((word) => text.includes(word));
-const findId = (text: string, ids: string[] = []): string | null => ids.find((id) => text.includes(id.toLowerCase())) ?? null;
+const hasAny = (text: string, words: readonly string[]): boolean => words.some((word) => text.includes(word));
+const findId = (text: string, ids: readonly string[] = []): string | null => ids.find((id) => text.includes(id.toLowerCase())) ?? null;
 
 export function parseActionLocally(input: PlayerInput, state?: MinimalApiState): ParsedAction {
   const raw = input.text.trim();
