@@ -1,0 +1,19 @@
+{
+  "name": "mantrpg-api",
+  "version": "0.1.0",
+  "description": "Token-efficient TRPG engine/API scaffold based on ManRPG V18 rule sources.",
+  "type": "module",
+  "scripts": {
+    "dev": "npm run build && node dist/src/index.js",
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.5.3"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
