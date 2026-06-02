@@ -22,11 +22,11 @@ export interface MinimalApiState {
   turn: number;
   player: PlayerSummary;
   enemy: { hp: string; condition: EnemyState['condition'] } | null;
-  availableActions: string[];
+  availableActions: readonly string[];
   candidateIds: {
-    skills: string[];
-    magic: string[];
-    items: string[];
+    skills: readonly string[];
+    magic: readonly string[];
+    items: readonly string[];
   };
 }
 
