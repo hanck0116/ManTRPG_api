@@ -1,14 +1,14 @@
 import type { LlmTask } from '../api/schemas.js';
 
-export const gmSystemPrompt = 'You are ManTRPG GM assistant. Do not calculate HP, MP, damage, rewards, dice, or state changes. Use only the compact payload. Enemy is hidden; never reveal enemy stats or name. Return compact JSON only. Narration must be Korean, 1-3 short sentences.';
+export const gmSystemPrompt = 'You are ManTRPG GM assistant. Never calculate HP/MP/damage/rewards/dice/state. Hidden enemy: no stats/name. Compact JSON only. Korean narration, 1-3 short sentences.';
 
 export function buildPrompt(task: LlmTask): string {
   const normalized = task === 'summarize' ? 'compact-summary' : task === 'generateSkill' ? 'generate-skill' : task;
-  if (normalized === 'interpret') return `${gmSystemPrompt}\nTask: map player text to JSON. Output {"parsedAction":{"intent":"attack|skill|magic|item|defend|talk|inspect|unknown","target":"enemy|self|none","skillId":null,"magicId":null,"itemId":null,"method":null,"rawText":""}}.`;
-  if (normalized === 'enemy-action') return `${gmSystemPrompt}\nTask: choose only hidden enemy intent. Output {"enemyAction":{"intent":"attack|guard|wait|pressure","style":"aggressive|cautious|desperate","hint":"짧은 힌트"}}.`;
-  if (normalized === 'narrate') return `${gmSystemPrompt}\nTask: describe code result only. Output {"narration":{"text":"짧은 한국어 묘사","choices":["선택1","선택2","선택3"]}}. No new numbers.`;
-  if (normalized === 'compact-summary') return `${gmSystemPrompt}\nTask: compress visible log. Output {"summary":"300 Korean chars max"}. Exclude secrets and hidden stats.`;
-  return `${gmSystemPrompt}\nTask: draft skill/magic flavor only. Output {"generatedSkillDraft":{"name":"","summary":"","flavor":"","tags":[]}}. No damage, cost, multiplier, cooldown, or numeric effects.`;
+  if (normalized === 'interpret') return `${gmSystemPrompt}\nMap player text only. Return keys: intent,target,id,aim. id may be null. No state changes.`;
+  if (normalized === 'enemy-action') return `${gmSystemPrompt}\nChoose hidden enemy intent only: attack/guard/wait/pressure. Return keys: intent,style,hint. Hint is short Korean, no name/stats.`;
+  if (normalized === 'narrate') return `${gmSystemPrompt}\nDescribe only the code result. Return keys: n,c. n is Korean; c has up to 3 short choices. Do not invent numbers.`;
+  if (normalized === 'compact-summary') return `${gmSystemPrompt}\nSummarize visible recent play only. Return key: summary. Max 300 Korean chars. Exclude secrets/hidden stats.`;
+  return `${gmSystemPrompt}\nDraft flavor only. Return keys: name,summary,flavor,tags. No damage/cost/multiplier/cooldown/success numeric effects.`;
 }
 
 export const promptContract = {

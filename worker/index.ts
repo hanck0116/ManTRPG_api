@@ -11,7 +11,7 @@ interface RelayRequest {
 export default {
   async fetch(request: Request, env: WorkerEnv): Promise<Response> {
     const url = new URL(request.url);
-    if (url.pathname === '/health') return json({ ok: true, mode: 'byok-direct-default', developerApiKey: false, localLlm: false });
+    if (url.pathname === '/health') return json({ ok: true, mode: 'byok-direct-default', localLlm: false });
     if (url.pathname === '/llm') return json({ ok: false, error: 'direct_byok_mode_uses_browser_provider_calls_not_worker' }, 403);
     if (url.pathname === '/proxy/llm') return proxyLlm(request, env);
     return json({ ok: true, message: 'ManTRPG worker: health/static/optional proxy only' });
@@ -29,7 +29,7 @@ async function proxyLlm(request: Request, env: WorkerEnv): Promise<Response> {
     headers: { 'Content-Type': 'application/json', Authorization: authorization },
     body: JSON.stringify(body.body ?? {}),
   });
-  return new Response(upstream.body, { status: upstream.status, headers: { 'Content-Type': upstream.headers.get('Content-Type') ?? 'application/json' } });
+  return new Response(upstream.body, { status: upstream.status, headers: { 'Content-Type': upstream.headers.get('Content-Type') ?? 'application/json', 'X-ManTRPG-Proxy-Warning': 'player_api_key_passes_worker_in_opt_in_proxy_mode' } });
 }
 
 function json(value: unknown, status = 200): Response {

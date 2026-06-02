@@ -2,6 +2,7 @@ import type { LlmCallResult, LlmSettings } from '../api/schemas.js';
 import { LlmCallResultSchema } from '../api/schemas.js';
 import { assertCompactPayloadSafe, serializeCompactPayload } from '../ai/compactPayload.js';
 import { maxTokensForTask } from '../ai/callPolicy.js';
+import { sanitizeResponse } from '../ai/types.js';
 import type { LlmAdapter, LlmRequest } from './types.js';
 import { buildPrompt } from '../gm/prompt.js';
 
@@ -42,9 +43,7 @@ export function createOpenAICompatibleAdapter(options: OpenAICompatibleOptions):
       const content = body.choices?.[0]?.message?.content ?? '{}';
       const parsed = parseJsonOnce(content);
       return LlmCallResultSchema.parse({
-        ok: true,
-        task: request.task,
-        ...(typeof parsed === 'object' && parsed !== null ? parsed : {}),
+        ...sanitizeResponse(request.task, parsed, request.task === 'interpret' ? request.text : ''),
         usage: {
           promptTokens: body.usage?.prompt_tokens ?? estimateTokens(payload),
           completionTokens: body.usage?.completion_tokens ?? estimateTokens(content),
