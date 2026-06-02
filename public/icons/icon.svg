@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="ManTRPG icon">
+  <rect width="512" height="512" rx="96" fill="#17141f"/>
+  <circle cx="256" cy="256" r="168" fill="#2c2440" stroke="#f4d35e" stroke-width="18"/>
+  <path d="M154 302c78-160 180-182 224-152-73 1-142 64-178 196" fill="none" stroke="#f4d35e" stroke-width="34" stroke-linecap="round"/>
+  <path d="M184 352h168" stroke="#f4d35e" stroke-width="30" stroke-linecap="round"/>
+</svg>

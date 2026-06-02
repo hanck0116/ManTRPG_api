@@ -9,14 +9,16 @@ LLM use is optional browser-side BYOK GM assistance. No local LLM, Ollama, llama
 - OpenRouter
 - Custom OpenAI-compatible endpoint
 
-## Tasks
+## Client Call Conditions
 
-| Task | Purpose | Call condition | Fallback |
+| Task | Purpose | Client call condition | Fallback |
 | --- | --- | --- | --- |
-| `interpret` | Unknown natural language to `ParsedAction`. | Local parser returns `unknown` and browser has a key. | Keep `unknown`. |
-| `narrate` | Short narration from engine JSON. | Important scene/reward/battle end policy. | `templateNarrator`. |
-| `summarize` | Compact long logs. | Long log only. | Local log summary. |
-| `generateSkill` | Flavor only. | Candidate IDs only. | Template text. |
+| `interpret` | Unknown natural language to `ParsedAction`. | Only when the local parser returns `unknown` and API settings resolve to a stored/entered key. | Keep the local `unknown` action. |
+| `narrate` | Short narration from engine JSON. | Only for `battleEnded`, `reward` tag, `scene_transition` tag, or generated skill/magic tags. General combat is forbidden from calling narrate. | `templateNarrator`. |
+| `summarize` | Compact long logs. | Long log only in future flows. | Local log summary. |
+| `generateSkill` | Flavor only. | Candidate IDs only in future generation moments. | Template text. |
+
+`llm.used` is true only after an actual successful provider call. `llm.fallback` is true only when a provider call was attempted and failed. If no call is attempted, the result can include a skipped reason such as `api_disabled_or_missing_key` or `local_template_combat`.
 
 ## Proxy Warning
 

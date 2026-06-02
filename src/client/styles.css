@@ -17,3 +17,8 @@ input, select { width: 100%; min-height: 44px; border-radius: 12px; border: 1px 
 label { display: flex; flex-direction: column; gap: 5px; font-size: 13px; color: #d8cfff; }
 .warning { color: #ffd37a; font-size: 13px; line-height: 1.4; }
 @media (min-width: 391px) { .app-shell { border-inline: 1px solid rgba(255,255,255,.08); } }
+.info, .usage, .api-status, .muted { font-size: 13px; line-height: 1.45; }
+.info p, .usage p { margin: 6px 0 0; }
+.api-status { border-radius: 12px; padding: 10px; background: rgba(244, 211, 94, .12); color: #ffe7a3; }
+.muted { color: #c8bed8; }
+button:disabled, input:disabled, select:disabled { opacity: .65; }
