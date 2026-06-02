@@ -68,7 +68,7 @@ function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
 }
 
-function redactRequest(request: LlmRequest): Omit<LlmRequest, 'settings'> & { settings: Omit<LlmSettings, 'apiKey'> & { apiKey: '[redacted]' } } {
+export function redactRequest(request: LlmRequest): Omit<LlmRequest, 'settings'> & { settings: Omit<LlmSettings, 'apiKey'> & { apiKey: '[redacted]' } } {
   return {
     ...request,
     settings: { ...request.settings, apiKey: '[redacted]' },

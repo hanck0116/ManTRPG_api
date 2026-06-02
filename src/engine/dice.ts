@@ -19,19 +19,26 @@ export interface RollResult {
   mode: RollMode;
 }
 
-export interface CheckInput {
-  target: number;
+export interface AbsoluteCheckInput {
+  baseTarget: number;
+  modifier?: number;
+  rng?: () => number;
+}
+
+export interface StatDieInput {
+  effectiveStat: number;
   modifier?: number;
   rng?: () => number;
 }
 
 export interface CheckResult {
   roll: number;
+  baseTarget: number;
   modifier: number;
-  total: number;
-  target: number;
+  effectiveTarget: number;
   success: boolean;
   grade: CheckGrade;
+  formula: '1d100 <= effectiveTarget';
 }
 
 const defaultRng = (): number => Math.random();
@@ -65,18 +72,28 @@ export const rollD100 = (options: Omit<RollOptions, 'sides'> = {}): RollResult =
 
 export const rollD20 = (options: Omit<RollOptions, 'sides'> = {}): RollResult => rollDice({ ...options, sides: 20 });
 
-export function rollCheck(input: CheckInput): CheckResult {
+/** V18 absolute check: low d100 is good, 1d100 <= effective stat + modifier succeeds. */
+export function rollAbsoluteCheck(input: AbsoluteCheckInput): CheckResult {
   const modifier = input.modifier ?? 0;
   const roll = rollDie(100, input.rng ?? defaultRng);
-  const total = roll + modifier;
-  const grade: CheckGrade = roll === 100 ? 'criticalSuccess' : roll === 1 ? 'criticalFail' : total >= input.target ? 'success' : 'fail';
+  const effectiveTarget = input.baseTarget + modifier;
+  const grade: CheckGrade = roll === 1 ? 'criticalSuccess' : roll === 100 ? 'criticalFail' : roll <= effectiveTarget ? 'success' : 'fail';
 
   return {
     roll,
+    baseTarget: input.baseTarget,
     modifier,
-    total,
-    target: input.target,
+    effectiveTarget,
     success: grade === 'criticalSuccess' || grade === 'success',
     grade,
+    formula: '1d100 <= effectiveTarget',
   };
 }
+
+/** V18 regular stat die: roll 1d[effective stat], optionally add a small local modifier. */
+export function rollStatDie(input: StatDieInput): RollResult {
+  if (!Number.isInteger(input.effectiveStat) || input.effectiveStat < 1) throw new Error('effectiveStat must be a positive integer');
+  return rollDice({ sides: input.effectiveStat, modifier: input.modifier ?? 0, rng: input.rng });
+}
+
+export const rollCheck = rollAbsoluteCheck;

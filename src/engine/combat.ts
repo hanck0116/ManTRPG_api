@@ -15,8 +15,8 @@ export interface EngineResult {
   result: 'success' | 'fail' | 'partial' | 'blocked';
   check: CheckResult | null;
   roll: number | null;
-  target: number | null;
-  total: number | null;
+  baseTarget: number | null;
+  effectiveTarget: number | null;
   grade: CheckResult['grade'] | null;
   success: boolean;
   damage: number;
@@ -38,7 +38,7 @@ const updatePlayerCondition = (player: PlayerState): void => {
   player.condition = player.hp <= 0 ? 'down' : player.hp <= Math.floor(player.maxHp / 2) ? 'wounded' : player.mp <= 0 ? 'exhausted' : 'normal';
 };
 
-const baseDamage = (player: PlayerState, enemy: EnemyState): number => Math.max(1, player.stats.strength + getEquipmentAttackBonus(player) - enemy.defense);
+const baseDamage = (player: PlayerState, enemy: EnemyState): number => Math.max(1, Math.floor(player.stats.strength / 20) + getEquipmentAttackBonus(player) - enemy.defense);
 
 function blocked(session: SessionState, reason: string): EngineResult {
   return {
@@ -47,8 +47,8 @@ function blocked(session: SessionState, reason: string): EngineResult {
     result: 'blocked',
     check: null,
     roll: null,
-    target: null,
-    total: null,
+    baseTarget: null,
+    effectiveTarget: null,
     grade: null,
     success: false,
     damage: 0,
@@ -82,8 +82,8 @@ function applyPlayerHit(session: SessionState, action: ParsedAction, damage: num
     result: judgment.success ? 'success' : 'fail',
     check: judgment.check,
     roll: judgment.roll,
-    target: judgment.target,
-    total: judgment.total,
+    baseTarget: judgment.baseTarget,
+    effectiveTarget: judgment.effectiveTarget,
     grade: judgment.grade,
     success: judgment.success,
     damage: dealt,
@@ -141,8 +141,8 @@ export function playerItem(session: SessionState, action: ParsedAction): EngineR
     result: 'success',
     check: null,
     roll: null,
-    target: null,
-    total: null,
+    baseTarget: null,
+    effectiveTarget: null,
     grade: null,
     success: true,
     damage: 0,
@@ -162,7 +162,7 @@ export function enemyAttack(session: SessionState, rng?: () => number): EngineRe
   if (session.player.condition === 'down') return blocked(session, 'player_down');
 
   const action: ParsedAction = { intent: 'attack', target: 'self', skillId: null, magicId: null, itemId: null, method: 'enemy_basic_attack', rawText: 'enemy attack' };
-  const judgment = judgeAction({ action, player: session.player, enemy: session.enemy, target: 60, stat: 'agility', rng });
+  const judgment = judgeAction({ action, player: session.player, enemy: session.enemy, stat: 'agility', rng });
   if (!judgment.ok || !judgment.check) return blocked(session, judgment.result);
 
   const damage = judgment.success ? Math.max(1, session.enemy.attack - getEquipmentDefenseBonus(session.player)) : 0;
@@ -177,8 +177,8 @@ export function enemyAttack(session: SessionState, rng?: () => number): EngineRe
     result: judgment.success ? 'success' : 'fail',
     check: judgment.check,
     roll: judgment.roll,
-    target: judgment.target,
-    total: judgment.total,
+    baseTarget: judgment.baseTarget,
+    effectiveTarget: judgment.effectiveTarget,
     grade: judgment.grade,
     success: judgment.success,
     damage,
@@ -200,8 +200,8 @@ export function defend(session: SessionState): EngineResult {
     result: 'success',
     check: null,
     roll: null,
-    target: null,
-    total: null,
+    baseTarget: null,
+    effectiveTarget: null,
     grade: null,
     success: true,
     damage: 0,

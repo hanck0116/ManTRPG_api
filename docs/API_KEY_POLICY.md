@@ -1,30 +1,21 @@
 # API Key Policy
 
-ManTRPG uses a BYOK (Bring Your Own Key) model. External API keys belong to the player, not the developer, and API use is an optional GM-assist feature.
+ManTRPG uses optional BYOK. API keys belong to the player.
 
-## Defaults
+## Default Security Boundary
 
-- The default API key mode is **이번 접속에서만 사용** (`sessionOnly`).
-- Players may opt into **이 기기에 저장** (`deviceIndexedDb`).
-- Players may opt into **암호화 저장** (`deviceIndexedDbEncrypted`) when Web Crypto is available.
-- The game must remain fully playable without any API key.
+- Default API use is browser-client-side provider calls.
+- `/turn` does not accept `llm.apiKey` and does not proxy provider traffic.
+- API keys are not stored in `TurnResult`, `SessionState`, `logSummary`, prompts, or saved sessions.
+- A future server proxy must be opt-in and must warn: **player API keys pass through the proxy server**.
 
-## Storage
+## Storage Modes
 
-- Session-only keys are held in memory by `src/pwa/apiKeyStore.ts` and disappear when the page session ends.
-- Device storage uses IndexedDB via `src/pwa/indexedDbStore.ts`.
-- Encrypted device storage uses Web Crypto AES-GCM before writing to IndexedDB.
-- API keys are not stored in `TurnResult`, `SessionState`, session logs, or saved sessions.
-- Players can delete one provider key or all keys at any time.
+- `sessionOnly` is the default and keeps the key in memory only.
+- `deviceIndexedDb` stores the key as plain IndexedDB data and must show: **공용 기기에서는 API Key를 저장하지 마세요.**
+- `deviceIndexedDbEncrypted` requires a user PIN/passphrase, derives an AES-GCM key with PBKDF2-SHA256, and stores provider-specific random salt and IV.
+- PIN/passphrase is never stored. Encrypted save fails if no PIN/passphrase is provided.
 
-## Logging and Redaction
+## No Local LLM
 
-- API keys must never be logged.
-- LLM request payloads sent to provider adapters redact `settings.apiKey` before prompt serialization.
-- Error messages must identify provider failures without echoing headers, request bodies, or key values.
-
-## Cost Ownership
-
-- API calls are made only with the player's chosen provider and key.
-- The developer does not pay for API calls.
-- The UI should show estimated token usage before or after optional calls when possible.
+Local LLM, Ollama, llama.cpp, GPT4All, and WebLLM are not used.

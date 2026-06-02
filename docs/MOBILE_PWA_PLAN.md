@@ -1,36 +1,21 @@
 # Mobile PWA Plan
 
-ManTRPG's default delivery path is a mobile-first PWA with a browser-local TypeScript engine and IndexedDB persistence.
+The PWA is mobile-first at 390px portrait width.
 
-## Mobile-First UX
+## Implemented Shell
 
-- Design for a 390px-wide portrait viewport first.
-- Keep primary controls large, stacked, and reachable with one hand.
-- Show only essential state: player HP/MP, one enemy HP/condition, 3 or fewer choices, and a short narration.
-- Do not build a map system.
-- Do not add boss-specific UI because enemies are always a single non-boss enemy.
+- `index.html`
+- `src/client/main.ts`
+- `src/client/styles.css`
+- `public/manifest.webmanifest`
+- `public/service-worker.js`
 
-## PWA Features
+## Screens
 
-- Installable home-screen experience using a manifest and service worker in the eventual web app shell.
-- Offline default play with no API dependency.
-- IndexedDB session save/load through `IndexedDbSessionStorageAdapter`.
-- API settings screen for provider, model, endpoint, key persistence, key deletion, test button, and usage estimate.
+1. Main play screen: player HP/MP, single enemy HP/status, short narration, max 3 choices, natural-language input, send button.
+2. API settings screen: no API, Groq, Gemini, OpenRouter, Custom OpenAI-compatible, key/model/endpoint fields, session-only/device/encrypted persistence, test/save, delete.
+3. Session screen: new game, continue, delete save.
 
-## Runtime Architecture
+## Runtime
 
-```text
-Mobile PWA
-  -> browser-local TypeScript engine
-  -> IndexedDB session storage
-  -> optional BYOK LLM adapters
-```
-
-The local engine owns dice, judgment, damage, healing, inventory, rewards, and enemy AI. Optional APIs provide only natural-language interpretation, short narration, log summary, or skill/magic flavor text.
-
-## 390px Acceptance Checklist
-
-- Main action buttons fit without horizontal scrolling.
-- Narration is short enough to read above action buttons.
-- API settings are a simple vertical form.
-- Provider test and delete-key buttons are visible without nested desktop panels.
+`src/client/gameRuntime.ts` loads IndexedDB sessions, runs the local parser, optionally calls client-side BYOK adapters, runs the local engine, applies template/LLM narration, saves IndexedDB, and returns `TurnResult`.

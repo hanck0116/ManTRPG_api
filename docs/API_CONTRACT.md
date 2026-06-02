@@ -1,52 +1,32 @@
 # API Contract
 
-ManTRPG_api keeps API payloads small. The API layer interprets natural language and narrates engine JSON, while the TypeScript engine owns all rules, dice, damage, healing, reward, stat, equipment, skill, magic, item, and state calculations.
+The server API is keyless by default. `/turn` accepts only local-engine input and never receives player API keys. Optional BYOK calls happen in the browser client runtime unless a future, explicitly opt-in proxy is added.
 
 ## PlayerInput
 
 ```json
-{
-  "sessionId": "string",
-  "text": "string",
-  "llm": {
-    "provider": "groq | gemini | openrouter | customOpenAI",
-    "apiKey": "player-owned key",
-    "endpoint": "optional custom URL",
-    "model": "optional model"
-  }
-}
+{ "sessionId": "string", "text": "string" }
 ```
 
-## ParsedAction
-
-```json
-{
-  "intent": "attack | skill | magic | item | defend | talk | inspect | rest | unknown",
-  "target": "enemy | self | none",
-  "skillId": "string | null",
-  "magicId": "string | null",
-  "itemId": "string | null",
-  "method": "string | null",
-  "rawText": "string"
-}
-```
-
-Current scaffold IDs use stable catalog naming: `EQ_WEAPON_SCYTHE_BASIC`, `EQ_ARMOR_TRAVELER_COAT`, `SK_REAPING_ARC`, `MG_EMBER_01`, `IT_HERB_SMALL`, and `ENEMY_STRAY_SHADOW`.
+`llm`, `apiKey`, and provider settings are not accepted by `/turn`.
 
 ## CheckResult
 
-All checks use d100. Natural `100` is `criticalSuccess`; natural `1` is `criticalFail`; otherwise `total >= target` succeeds. Modifiers affect `total` only.
+V18 absolute checks use `1d100 <= effectiveTarget`.
 
 ```json
 {
-  "roll": 72,
+  "roll": 65,
+  "baseTarget": 60,
   "modifier": 5,
-  "total": 77,
-  "target": 60,
+  "effectiveTarget": 65,
   "success": true,
-  "grade": "criticalSuccess | success | fail | criticalFail"
+  "grade": "criticalSuccess | success | fail | criticalFail",
+  "formula": "1d100 <= effectiveTarget"
 }
 ```
+
+Natural `1` is `criticalSuccess`; natural `100` is `criticalFail`.
 
 ## EngineResult
 
@@ -56,100 +36,30 @@ All checks use d100. Natural `100` is `criticalSuccess`; natural `1` is `critica
   "scene": "combat | rest | dialogue",
   "result": "success | fail | partial | blocked",
   "check": "CheckResult | null",
-  "roll": 72,
-  "target": 60,
-  "total": 77,
+  "roll": 65,
+  "baseTarget": 60,
+  "effectiveTarget": 65,
   "grade": "success",
   "success": true,
-  "damage": 8,
+  "damage": 4,
   "healing": 0,
   "playerHp": 32,
   "playerMp": 18,
-  "enemyHp": 12,
+  "enemyHp": 16,
   "battleEnded": false,
   "tags": ["hit", "physical"],
-  "messageHint": "short hint for narrator"
+  "messageHint": "player_hit_enemy"
 }
 ```
-
-## EnemyDecision
-
-The GM/API decision layer may choose the enemy's intent later. The current scaffold uses a local compact decision function and keeps all damage calculation in `combat.ts`.
-
-```json
-{
-  "intent": "attack",
-  "target": "player",
-  "method": "basic_attack",
-  "reasonTag": "default_aggressive"
-}
-```
-
-Enemy decision rules: there is exactly one enemy; defeated enemies do not act; a down player is not attacked; the default intent is `attack`.
-
-## TurnResult
-
-```json
-{
-  "action": "ParsedAction",
-  "playerResult": "EngineResult",
-  "enemyDecision": "EnemyDecision | null",
-  "enemyResult": "EngineResult | null",
-  "narration": "NarrationResult",
-  "state": "MinimalApiState",
-  "llm": {
-    "used": false,
-    "tasks": [],
-    "fallback": false,
-    "usageEstimate": null
-  }
-}
-```
-
-Turn order is: player input validation → local parser → optional BYOK interpret only for unknown actions → player engine result → local single-enemy decision → enemy engine result → minimal state summary → template narration or allowed BYOK narration. `TurnResult` never contains API keys.
-
-## NarrationResult
-
-```json
-{
-  "text": "string",
-  "choices": ["string", "string", "string"]
-}
-```
-
-Narration stays at 2 to 4 short sentences, uses only engine-produced numbers, and returns at most 3 choices.
 
 ## MinimalApiState
 
-```json
-{
-  "scene": "combat",
-  "turn": 2,
-  "player": {
-    "hp": "36/40",
-    "mp": "25/25",
-    "weapon": "낫",
-    "condition": "normal"
-  },
-  "enemy": {
-    "hp": "16/20",
-    "condition": "normal"
-  },
-  "availableActions": ["attack", "skill", "magic", "item", "defend"],
-  "candidateIds": {
-    "skills": ["SK_REAPING_ARC"],
-    "magic": ["MG_EMBER_01"],
-    "items": ["IT_HERB_SMALL"]
-  }
-}
-```
+Only compact state and up to five candidate IDs per category are exposed. Full catalogs and full character sheets are not sent to APIs.
 
-## Endpoints
+## NarrationResult
 
-### `GET /health`
+Narration is 1-3 short sentences and up to 3 choices. API narration may only restate engine-produced numbers.
 
-Returns service health.
+## Forbidden API Authority
 
-### `POST /turn`
-
-Accepts `PlayerInput` and returns `TurnResult`. The handler is asynchronous because optional BYOK calls may be attempted, but no-key turns return through the local engine/template path.
+APIs do not generate dice rolls, damage, healing, rewards, enemy counts, HP/MP changes, or state mutation. There is exactly one enemy.

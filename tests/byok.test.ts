@@ -7,32 +7,20 @@ import { MemorySessionStorageAdapter, createStoredSessionRecord } from '../src/s
 const secret = 'sk-test-secret-do-not-log';
 
 describe('BYOK optional LLM flow', () => {
-  it('plays a full turn without an API key', async () => {
+  it('server /turn plays without an API key', async () => {
     const result = await handleTurn({ sessionId: 'no-key-turn', text: '낫으로 공격한다' });
-
     expect(result.action.intent).toBe('attack');
     expect(result.playerResult.damage).toBeGreaterThanOrEqual(0);
     expect(result.narration.text.length).toBeGreaterThan(0);
     expect(result.llm.used).toBe(false);
   });
 
-  it('falls back to template narration when the API call is skipped or fails', async () => {
-    const result = await handleTurn({
-      sessionId: 'fallback-turn',
-      text: '정체불명의 몸짓으로 위협한다',
-      llm: { provider: 'customOpenAI', endpoint: 'https://example.invalid/v1/chat/completions', apiKey: secret, model: 'test' },
-    });
-
-    expect(result.llm.fallback).toBe(true);
-    expect(result.narration.text).toContain('행동이 막혔다');
+  it('server /turn rejects client API keys so keys never transit the server API', async () => {
+    await expect(handleTurn({ sessionId: 'fallback-turn', text: '공격', llm: { provider: 'groq', apiKey: secret } } as never)).rejects.toThrow();
   });
 
   it('does not include API keys in turn results or stored sessions', async () => {
-    const result = await handleTurn({
-      sessionId: 'redaction-turn',
-      text: '낫으로 공격한다',
-      llm: { provider: 'groq', apiKey: secret },
-    });
+    const result = await handleTurn({ sessionId: 'redaction-turn', text: '낫으로 공격한다' });
     expect(JSON.stringify(result)).not.toContain(secret);
 
     const adapter = new MemorySessionStorageAdapter();
@@ -42,10 +30,9 @@ describe('BYOK optional LLM flow', () => {
   });
 
   it('keeps MinimalApiState compact and catalog-free', () => {
-    const state = summarizeSession(createSessionState('minimal-state'));
+    const state = summarizeSession(createSessionState('minimal-state-old'));
     const parsed = MinimalApiStateSchema.parse(state);
     const serialized = JSON.stringify(parsed);
-
     expect(parsed.candidateIds.skills).toEqual(['SK_REAPING_ARC']);
     expect(serialized).not.toContain('damageMultiplier');
     expect(serialized).not.toContain('EQ_WEAPON_SCYTHE_BASIC');
