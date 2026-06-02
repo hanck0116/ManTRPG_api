@@ -7,7 +7,13 @@ ManTRPG_api keeps API payloads small. The API layer interprets natural language 
 ```json
 {
   "sessionId": "string",
-  "text": "string"
+  "text": "string",
+  "llm": {
+    "provider": "groq | gemini | openrouter | customOpenAI",
+    "apiKey": "player-owned key",
+    "endpoint": "optional custom URL",
+    "model": "optional model"
+  }
 }
 ```
 
@@ -90,11 +96,17 @@ Enemy decision rules: there is exactly one enemy; defeated enemies do not act; a
   "enemyDecision": "EnemyDecision | null",
   "enemyResult": "EngineResult | null",
   "narration": "NarrationResult",
-  "state": "MinimalApiState"
+  "state": "MinimalApiState",
+  "llm": {
+    "used": false,
+    "tasks": [],
+    "fallback": false,
+    "usageEstimate": null
+  }
 }
 ```
 
-Turn order is: player input validation → parsed action → player engine result → optional enemy decision → enemy engine result → minimal state summary → GM narration.
+Turn order is: player input validation → local parser → optional BYOK interpret only for unknown actions → player engine result → local single-enemy decision → enemy engine result → minimal state summary → template narration or allowed BYOK narration. `TurnResult` never contains API keys.
 
 ## NarrationResult
 
@@ -112,6 +124,7 @@ Narration stays at 2 to 4 short sentences, uses only engine-produced numbers, an
 ```json
 {
   "scene": "combat",
+  "turn": 2,
   "player": {
     "hp": "36/40",
     "mp": "25/25",
@@ -122,7 +135,12 @@ Narration stays at 2 to 4 short sentences, uses only engine-produced numbers, an
     "hp": "16/20",
     "condition": "normal"
   },
-  "availableActions": ["attack", "skill", "magic", "item", "defend"]
+  "availableActions": ["attack", "skill", "magic", "item", "defend"],
+  "candidateIds": {
+    "skills": ["SK_REAPING_ARC"],
+    "magic": ["MG_EMBER_01"],
+    "items": ["IT_HERB_SMALL"]
+  }
 }
 ```
 
@@ -134,4 +152,4 @@ Returns service health.
 
 ### `POST /turn`
 
-Accepts `PlayerInput` and returns `TurnResult`.
+Accepts `PlayerInput` and returns `TurnResult`. The handler is asynchronous because optional BYOK calls may be attempted, but no-key turns return through the local engine/template path.

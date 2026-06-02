@@ -3,7 +3,7 @@ import type { MagicDefinition } from '../data/magic.js';
 import type { CheckResult } from './dice.js';
 import type { ParsedAction } from './judgment.js';
 import { judgeAction } from './judgment.js';
-import { getEquipmentAttackBonus, getEquipmentDefenseBonus } from './inventory.js';
+import { getEquipmentAttackBonus, getEquipmentDefenseBonus, useItem } from './inventory.js';
 import { canUseSkill, spendSkillCost } from './skills.js';
 import { canCastMagic, spendMagicCost } from './magic.js';
 import type { PlayerState } from '../state/playerState.js';
@@ -123,6 +123,37 @@ export function playerMagic(session: SessionState, action: ParsedAction, rng?: (
   const magic: MagicDefinition = availability.magic;
   spendMagicCost(session.player, magic);
   return applyPlayerHit(session, action, magic.power, magic.tags, magic.target, 0, rng);
+}
+
+
+export function playerItem(session: SessionState, action: ParsedAction): EngineResult {
+  if (!action.itemId) return blocked(session, 'item_id_missing');
+  if (session.player.condition === 'down') return blocked(session, 'player_down');
+
+  const outcome = useItem(session.player, action.itemId);
+  if (!outcome.ok) return blocked(session, outcome.tags.at(-1) ?? 'item_unavailable');
+  updatePlayerCondition(session.player);
+  session.logSummary.push(`item:success:${outcome.healing}`);
+
+  return {
+    ok: true,
+    scene: session.scene,
+    result: 'success',
+    check: null,
+    roll: null,
+    target: null,
+    total: null,
+    grade: null,
+    success: true,
+    damage: 0,
+    healing: outcome.healing,
+    playerHp: session.player.hp,
+    playerMp: session.player.mp,
+    enemyHp: session.enemy?.currentHp ?? null,
+    battleEnded: session.enemy?.condition === 'defeated' || session.player.hp <= 0,
+    tags: outcome.tags,
+    messageHint: 'player_used_item',
+  };
 }
 
 export function enemyAttack(session: SessionState, rng?: () => number): EngineResult {

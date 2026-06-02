@@ -21,7 +21,7 @@ const server = createServer(async (request, response) => {
   if (request.method === 'POST' && request.url === '/turn') {
     try {
       const input = parsePlayerInput(await readJson(request));
-      response.end(JSON.stringify(handleTurn(input)));
+      response.end(JSON.stringify(await handleTurn(input)));
     } catch (error) {
       response.statusCode = 400;
       response.end(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : 'unknown error' }));
