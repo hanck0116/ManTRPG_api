@@ -1,7 +1,8 @@
 import type { TurnResult } from '../api/routes.js';
 import type { ClientUiState } from './uiState.js';
+import { capChoices } from './uiHelpers.js';
 
-const choices = (turn: TurnResult | null) => (turn?.narration.choices ?? ['/attack', '/defend', '/item IT_HERB_SMALL']).slice(0, 3);
+const choices = (turn: TurnResult | null) => capChoices(turn?.narration.choices ?? ['/attack', '/defend', '/item IT_HERB_SMALL']);
 
 function usageHtml(turn: TurnResult | null): string {
   const usage = turn?.llm.usageEstimate;
