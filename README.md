@@ -138,3 +138,13 @@ npm run typecheck
 - Replace staging catalog data with the full V18 catalog.
 - Add browser E2E tests for the API settings form and IndexedDB flows.
 - Add an explicitly separate opt-in server proxy module if proxy mode is needed.
+
+
+## BYOK GM 목표
+
+ManTRPG PWA는 GPTs처럼 대화형 TRPG GM 느낌을 제공하되, 기본 비용이 발생하지 않도록 설계되었습니다. 로컬 LLM은 사용하지 않으며, API Key 없이도 로컬 파서/템플릿 묘사/TypeScript V18 전투 엔진으로 플레이할 수 있습니다. API는 플레이어가 직접 입력한 Key가 있을 때만 자연어 해석, 숨겨진 적 의도, 짧은 한국어 묘사, 스킬/마법 설명 초안, compact summary에 제한적으로 사용합니다.
+
+- 상태/판정/피해/회복/보상/장비/아이템/스킬 수치는 코드가 소유합니다.
+- 적은 항상 1명이며 UI/API에는 이름, HP, 상세 스탯 대신 기척 힌트만 노출합니다.
+- 전체 룰북, 전체 시트, 전체 catalog, API Key는 prompt payload에 포함하지 않습니다.
+- 자세한 정책은 `docs/API_KEY_POLICY.md`, `docs/TOKEN_POLICY.md`, `docs/LLM_TASKS.md`, `docs/COMPACT_PAYLOAD.md`, `docs/SKILL_GENERATION.md`, `docs/COST_FREE_BYOK.md`를 참고하세요.

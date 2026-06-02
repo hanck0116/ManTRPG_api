@@ -1,6 +1,6 @@
 import type { LlmProvider, LlmSettings } from '../api/schemas.js';
 
-export type ApiKeyPersistence = 'sessionOnly' | 'deviceIndexedDb' | 'deviceIndexedDbEncrypted';
+export type ApiKeyPersistence = 'sessionOnly' | 'deviceIndexedDbEncrypted' | 'deviceIndexedDb';
 
 export interface MobilePwaSettings {
   mobileFirst: true;

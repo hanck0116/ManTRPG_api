@@ -7,29 +7,13 @@ export interface LlmRequestBase {
   state: MinimalApiState;
 }
 
-export interface InterpretRequest extends LlmRequestBase {
-  task: 'interpret';
-  text: string;
-}
+export interface InterpretRequest extends LlmRequestBase { task: 'interpret'; text: string; }
+export interface EnemyActionRequest extends LlmRequestBase { task: 'enemy-action'; engineResult?: EngineResult; }
+export interface NarrateRequest extends LlmRequestBase { task: 'narrate'; action: ParsedAction; engineResult: EngineResult; }
+export interface SummarizeRequest extends LlmRequestBase { task: 'compact-summary' | 'summarize'; logLines: string[]; }
+export interface GenerateSkillRequest extends LlmRequestBase { task: 'generate-skill' | 'generateSkill'; candidateIds: string[]; theme: string; }
 
-export interface NarrateRequest extends LlmRequestBase {
-  task: 'narrate';
-  action: ParsedAction;
-  engineResult: EngineResult;
-}
-
-export interface SummarizeRequest extends LlmRequestBase {
-  task: 'summarize';
-  logLines: string[];
-}
-
-export interface GenerateSkillRequest extends LlmRequestBase {
-  task: 'generateSkill';
-  candidateIds: string[];
-  theme: string;
-}
-
-export type LlmRequest = InterpretRequest | NarrateRequest | SummarizeRequest | GenerateSkillRequest;
+export type LlmRequest = InterpretRequest | EnemyActionRequest | NarrateRequest | SummarizeRequest | GenerateSkillRequest;
 
 export interface LlmAdapter {
   provider: LlmSettings['provider'];
