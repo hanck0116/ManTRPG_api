@@ -7,6 +7,6 @@ describe('PWA smoke checklist', () => {
     const main = readFileSync('src/client/main.ts', 'utf8');
     expect(css).toContain('390px');
     expect(css).toContain('flex-direction: column');
-    expect(main).toContain('slice(0, 3)');
+    expect(main).toMatch(/slice\(\s*0\s*,\s*3\s*\)/);
   });
 });
