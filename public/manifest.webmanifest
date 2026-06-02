@@ -1,21 +1,21 @@
 {
   "name": "ManTRPG Mobile PWA",
   "short_name": "ManTRPG",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "theme_color": "#17141f",
   "background_color": "#17141f",
   "icons": [
     {
-      "src": "/icons/icon.svg",
+      "src": "icons/icon.svg",
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/icons/maskable-icon.svg",
+      "src": "icons/maskable-icon.svg",
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "maskable"
