@@ -1,16 +1,16 @@
 # Skill Generation
 
-`generate-skill` API 호출은 설명 초안만 허용합니다.
+`generate-skill` is allowed only as flavor drafting.
 
-Allowed draft fields:
+LLM may provide:
 
 - `name`
 - `summary`
 - `flavor`
 - `tags`
 
-Forbidden from LLM:
+LLM must not provide or finalize:
 
-- damage, cost, multiplier, cooldown, power, HP/MP 변화 등 확정 수치.
+- damage, cost/MP cost, multiplier, cooldown, power, success rate, HP/MP changes, rewards, or any numeric effect.
 
-`sanitizeGeneratedSkillDraft`가 금지 수치를 거부하고, `balanceGeneratedSkill`이 V18 기준의 코드 밸런스 값(`id`, `costMp`, `damageMultiplier`, `targetModifier`)을 부여합니다.
+`sanitizeGeneratedSkillDraft` rejects forbidden numeric draft fields. `sanitizeResponse` strips forbidden task-output fields. A generated skill remains a draft until code validation passes, and `balanceGeneratedSkill` assigns V18-compatible code-owned values such as `id`, `costMp`, `damageMultiplier`, and `targetModifier`.

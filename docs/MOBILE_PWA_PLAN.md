@@ -1,6 +1,6 @@
 # Mobile PWA Plan
 
-The PWA is mobile-first at 390px portrait width.
+The PWA is mobile-first at 390px portrait width and also works on PC.
 
 ## Implemented Shell
 
@@ -14,8 +14,8 @@ The PWA is mobile-first at 390px portrait width.
 
 ## Screens
 
-1. Main play screen: player HP/MP, single enemy HP/status, short narration, max 3 choices, natural-language input, send button, API usage estimate if present.
-2. API settings screen: no API, Groq, Gemini, OpenRouter, Custom OpenAI-compatible, key/model/endpoint fields, session-only/device/encrypted persistence, test/save, delete, CORS warning.
+1. Main play screen: player HP/MP/equipment/actions, hidden single-enemy hint only (no enemy name/HP/stats), short narration, max 3 choices, natural-language input, send button, API usage estimate if present.
+2. API settings screen: API 사용 안 함, Groq, Gemini, OpenRouter, Custom OpenAI-compatible, key/model/endpoint fields, session-only/encrypted persistence, passphrase, confirm-before-call option, usage/cost estimate, delete key, CORS/proxy warnings.
 3. Session screen: new game, continue, delete save.
 
 ## Runtime
@@ -30,15 +30,9 @@ The PWA is mobile-first at 390px portrait width.
 - Activate deletes older `mantrpg-*` caches.
 - Provider API requests are not cached.
 
-## Manifest/Icon Requirements
-
-- `display` remains `standalone`.
-- `orientation` remains `portrait`.
-- `icons` must not be empty and includes normal and maskable SVG icons from `public/icons/`.
-
 ## 390px UI Checklist
 
 - Controls are at least 44px tall.
 - Tabs, choices, and forms fit one column.
 - No external fonts or downloaded images are required.
-- API warnings are visible before saving keys on device.
+- API warnings are visible before encrypted key persistence or proxy mode.

@@ -2,6 +2,7 @@ import type { LlmCallResult, LlmSettings } from '../api/schemas.js';
 import { LlmCallResultSchema } from '../api/schemas.js';
 import { assertCompactPayloadSafe, serializeCompactPayload } from '../ai/compactPayload.js';
 import { maxTokensForTask } from '../ai/callPolicy.js';
+import { sanitizeResponse } from '../ai/types.js';
 import { buildPrompt } from '../gm/prompt.js';
 import type { LlmAdapter, LlmRequest } from './types.js';
 
@@ -28,9 +29,7 @@ export const geminiAdapter: LlmAdapter = {
     const content = body.candidates?.[0]?.content?.parts?.[0]?.text ?? '{}';
     const parsed = parseJsonOnce(content);
     return LlmCallResultSchema.parse({
-      ok: true,
-      task: request.task,
-      ...(typeof parsed === 'object' && parsed !== null ? parsed : {}),
+      ...sanitizeResponse(request.task, parsed, request.task === 'interpret' ? request.text : ''),
       usage: {
         promptTokens: body.usageMetadata?.promptTokenCount ?? Math.ceil(payload.length / 4),
         completionTokens: body.usageMetadata?.candidatesTokenCount ?? Math.ceil(content.length / 4),
