@@ -13,9 +13,9 @@ const magicAction = {
 };
 
 describe('magic', () => {
-  it('spends mana and applies engine-calculated magic damage', () => {
+  it('spends mana and applies engine-calculated magic damage on a V18 low-roll success', () => {
     const session = createSessionState('magic-test');
-    const result = playerMagic(session, magicAction, () => 0.95);
+    const result = playerMagic(session, magicAction, () => 0.05);
     expect(result.result).toBe('success');
     expect(result.damage).toBe(7);
     expect(result.playerMp).toBe(21);
@@ -27,7 +27,7 @@ describe('magic', () => {
     session.player.mp = 3;
     const enemyHpBefore = session.enemy?.currentHp;
 
-    const result = playerMagic(session, magicAction, () => 0.95);
+    const result = playerMagic(session, magicAction, () => 0.05);
 
     expect(result.result).toBe('blocked');
     expect(result.playerMp).toBe(3);
