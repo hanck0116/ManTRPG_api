@@ -19,9 +19,15 @@ export interface SessionState {
 
 export interface MinimalApiState {
   scene: Scene;
+  turn: number;
   player: PlayerSummary;
   enemy: { hp: string; condition: EnemyState['condition'] } | null;
   availableActions: string[];
+  candidateIds: {
+    skills: string[];
+    magic: string[];
+    items: string[];
+  };
 }
 
 export function createEnemyState(enemyId = 'ENEMY_STRAY_SHADOW'): EnemyState {
@@ -51,6 +57,7 @@ export function createSessionState(sessionId = 'demo'): SessionState {
 export function summarizeSession(session: SessionState): MinimalApiState {
   return {
     scene: session.scene,
+    turn: session.turn,
     player: summarizePlayer(session.player),
     enemy: session.enemy
       ? {
@@ -59,5 +66,10 @@ export function summarizeSession(session: SessionState): MinimalApiState {
         }
       : null,
     availableActions: session.scene === 'combat' ? ['attack', 'skill', 'magic', 'item', 'defend'] : ['talk', 'inspect', 'rest'],
+    candidateIds: {
+      skills: session.player.skills.slice(0, 5),
+      magic: session.player.magic.slice(0, 5),
+      items: Object.entries(session.player.inventory).filter(([, count]) => count > 0).map(([itemId]) => itemId).slice(0, 5),
+    },
   };
 }

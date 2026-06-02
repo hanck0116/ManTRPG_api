@@ -1,40 +1,95 @@
 # ManTRPG_api
 
-ManTRPG_api is a TypeScript TRPG engine/API scaffold for a token-efficient tabletop RPG experience. It keeps the feeling of free-form TRPG play while moving calculations out of the API/GM layer and into deterministic code modules.
+ManTRPG_api is a mobile-first TypeScript TRPG engine/API scaffold. The default path is **PWA + browser-local TypeScript engine + IndexedDB save data**. External AI APIs are optional BYOK (Bring Your Own Key) GM-assist tools, not required game infrastructure.
 
-## Goals
+## Current Direction
 
-- Preserve TRPG flavor, impact, and player freedom.
-- Remove map-centered gameplay.
-- Keep combat focused on exactly one enemy.
-- Exclude boss monster systems.
-- Keep UI/API state simple: HP, MP, enemy condition, and a few available actions.
-- Minimize API token usage with ID references and compact state summaries.
+- Mobile usability is the top priority.
+- Rules, dice, judgment, damage, healing, inventory, rewards, and enemy AI run in the local TypeScript engine.
+- The game is fully playable without an API key.
+- Local LLM, Ollama, llama.cpp, GPT4All, and WebLLM are not used.
+- Players may enter their own API key for optional GM assistance.
+- API call costs are paid by the player/provider account that owns the key, not by the developer.
+- Enemies are always exactly one enemy.
+- Boss monsters are excluded.
+- No map system is planned.
+- UI should be simple and mobile portrait first.
 
-## Difference from Existing ManRPG
+## Target Structure
 
-The prior ManRPG direction was map-centered and carried broader rule context. This project uses `ManRPG_v18_FINAL_병합패키지.zip` as the rule/data source, but restructures play into a compact TRPG engine. The current scaffold is still before full V18 data migration; equipment, skills, magic, items, and enemies are represented by small placeholder catalogs with stable IDs.
+```text
+src/
+├─ engine/       # local deterministic rules
+├─ state/        # player/session state and storage adapter contracts
+├─ gm/           # template narration, local action parser, prompt contracts
+├─ llm/          # optional BYOK provider routing/adapters
+├─ pwa/          # API-key settings/storage and IndexedDB session storage
+└─ api/          # JSON schemas and turn route
+```
 
-## Current Turn Flow
+## BYOK API Model
+
+API integration is optional and provider-neutral. Supported provider settings are:
+
+- Groq
+- Gemini
+- OpenRouter
+- Custom OpenAI-compatible endpoint
+
+API key policy:
+
+- Default mode: **이번 접속에서만 사용**.
+- Optional mode: **이 기기에 저장** using IndexedDB.
+- Optional encrypted mode: Web Crypto AES-GCM before IndexedDB storage when available.
+- API keys are not logged.
+- API keys are not included in `TurnResult`, `SessionState`, combat logs, or saved sessions.
+- Players can delete stored keys at any time.
+
+See `docs/API_KEY_POLICY.md` for the full policy.
+
+## LLM Routing
+
+LLM calls are routed by task:
+
+| Task | Use |
+| --- | --- |
+| `interpret` | Convert only unresolved natural-language actions into `ParsedAction` JSON. |
+| `narrate` | Convert an engine-produced `EngineResult` into short mobile GM narration. |
+| `summarize` | Compress long logs into a short session summary. |
+| `generateSkill` | Generate short skill/magic flavor text without combat math. |
+
+The API receives only compact inputs such as `MinimalApiState`, `EngineResult`, and needed candidate IDs. It must not receive full character sheets, full rules, or full catalogs. API output is validated with JSON schemas, and failures immediately fall back to local templates.
+
+See `docs/LLM_ROUTING.md` and `docs/TOKEN_POLICY.md` for call conditions.
+
+## No-API Play Flow
 
 ```text
 PlayerInput
-  -> ParsedAction
-  -> player EngineResult
-  -> EnemyDecision | null
-  -> enemy EngineResult | null
-  -> MinimalApiState
-  -> NarrationResult
+  -> local action parser
+  -> local engine calculation
+  -> local single-enemy AI
+  -> local templateNarrator
+  -> TurnResult
+  -> IndexedDB save in PWA shell
 ```
 
-1. The player writes a natural-language action.
-2. The API/GM layer converts it into a short `ParsedAction` JSON command.
-3. Engine modules calculate the player action: d100 roll, success grade, damage, MP cost, HP changes, blocked state, and battle end.
-4. If combat continues, the local GM decision function returns compact `EnemyDecision` JSON.
-5. Engine combat code calculates the enemy result.
-6. The API returns only compact state and short narration.
+No API key is needed. General attacks, defense, item use, and clear skill/magic choices remain fully local.
 
-The API/GM layer does not roll dice, invent damage, calculate healing, or grant rewards. It only interprets player language, chooses compact JSON intent, and describes engine JSON like a TRPG master.
+## Optional API Play Flow
+
+```text
+PlayerInput
+  -> local parser
+  -> if unknown and API key exists: interpret
+  -> local engine calculation
+  -> local single-enemy AI
+  -> for allowed important scenes only: narrate/summarize/generateSkill
+  -> JSON schema validation
+  -> template fallback on failure
+```
+
+The API never creates damage, healing, dice values, rewards, enemy counts, or state mutation.
 
 ## d100 Judgment Structure
 
@@ -45,54 +100,24 @@ All core checks use d100.
 - `total >= target` succeeds.
 - Natural `100` is `criticalSuccess`.
 - Natural `1` is `criticalFail`.
-- Modifiers affect only `total`, not the natural critical rules.
+- Modifiers affect only `total`, not natural critical rules.
 
-Example:
-
-```json
-{
-  "roll": 72,
-  "modifier": 5,
-  "total": 77,
-  "target": 60,
-  "success": true,
-  "grade": "success"
-}
-```
-
-## EnemyDecision Structure
-
-Enemy intent is separated from combat math so a future API/GM model can choose intent without calculating damage.
+## MinimalApiState Example
 
 ```json
 {
-  "intent": "attack",
-  "target": "player",
-  "method": "basic_attack",
-  "reasonTag": "default_aggressive"
+  "scene": "combat",
+  "turn": 2,
+  "player": { "hp": "36/40", "mp": "25/25", "weapon": "낫", "condition": "normal" },
+  "enemy": { "hp": "16/20", "condition": "normal" },
+  "availableActions": ["attack", "skill", "magic", "item", "defend"],
+  "candidateIds": {
+    "skills": ["SK_REAPING_ARC"],
+    "magic": ["MG_EMBER_01"],
+    "items": ["IT_HERB_SMALL"]
+  }
 }
 ```
-
-Current local rules are intentionally small: exactly one enemy exists, defeated enemies do not act, a down player is not attacked, and the default active enemy action is `attack`.
-
-## API Integration Points
-
-Future external API/LLM integration should replace only these interpretation/description points:
-
-- Player natural language → `ParsedAction`.
-- Enemy intent selection → `EnemyDecision`.
-- Compact engine result → short `NarrationResult`.
-
-It must not replace engine-side dice, judgment, damage, healing, MP cost, reward, or state mutation calculations.
-
-## Catalog ID Convention
-
-- Equipment weapon: `EQ_WEAPON_SCYTHE_BASIC`
-- Equipment armor: `EQ_ARMOR_TRAVELER_COAT`
-- Skill: `SK_REAPING_ARC`
-- Magic: `MG_EMBER_01`
-- Item: `IT_HERB_SMALL`
-- Enemy: `ENEMY_STRAY_SHADOW`
 
 ## Install
 
@@ -112,7 +137,7 @@ Health check:
 curl http://localhost:3000/health
 ```
 
-Turn example:
+Turn example without API key:
 
 ```bash
 curl -X POST http://localhost:3000/turn \
@@ -128,36 +153,18 @@ npm test
 npm run typecheck
 ```
 
-## Token-Saving Structure
+## Implemented First-Pass Scope
 
-- Full player sheets are not sent every turn.
-- Full catalogs are not sent to the API.
-- Equipment, skills, magic, and items are referenced by ID.
-- Only minimal scene state is exposed to narration.
-- Narration is short and choice lists are capped at 3.
-- Combat logs are summarized in code.
-- Enemy behavior uses compact `EnemyDecision` JSON instead of long hidden reasoning.
+- TypeScript engine modules for dice, judgment, combat, skill, magic, inventory, reward, and single-enemy AI.
+- Browser/PWA storage contracts and IndexedDB adapters.
+- BYOK API key handling helpers with session-only and IndexedDB modes.
+- Optional LLM router and provider adapters for Groq, Gemini, OpenRouter, and custom OpenAI-compatible endpoints.
+- Template fallback narration.
+- Documentation for API key policy, mobile PWA plan, token policy, and LLM routing.
 
-## First-Pass Scope
+## Remaining Work
 
-Implemented in this scaffold:
-
-- TypeScript project setup with `node:http`, `zod`, `tsx`, and `vitest`.
-- Engine modules for d100 dice checks, judgment, and single-enemy combat.
-- Basic player/session state and minimal API state summaries.
-- Local enemy decision module with API-replaceable `EnemyDecision` shape.
-- GM prompt and short narrator separation.
-- API contract, token policy, and rule source documentation.
-- Tests for dice, combat, magic blocking, and single-enemy constraints.
-
-Not yet implemented:
-
-- Full V18 data catalog migration from `ManRPG_v18_FINAL_병합패키지.zip`.
-- External LLM integration for robust Korean natural-language parsing, enemy intent, and prose narration.
-- Persistent session storage.
-- Advanced inventory/shop flows.
-- Complete skill/magic/item catalogs.
-
-## Recommended Next Step
-
-Move V18 equipment, skill, magic, item, and enemy data into ID-based catalogs under `src/data/*`, then add regression tests for each migrated rule before expanding API behavior.
+- Build the actual mobile PWA UI shell, manifest, and service worker.
+- Add browser/E2E tests for the 390px mobile viewport.
+- Complete full V18 catalog migration using ID-based data.
+- Add provider-specific pricing display for API usage estimates.

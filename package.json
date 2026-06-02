@@ -9,9 +9,7 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
-    "zod": "^3.25.76"
-  },
+  "dependencies": {},
   "devDependencies": {
     "typescript": "^5.5.3",
     "tsx": "^4.20.4",
