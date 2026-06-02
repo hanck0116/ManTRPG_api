@@ -1,32 +1,10 @@
 # API Key Policy
 
-ManTRPG uses optional BYOK. API keys belong to the player.
-
-## Default Security Boundary
-
-- Default API use is browser-client-side provider calls.
-- `/turn` does not accept `llm.apiKey` and does not proxy provider traffic.
-- API keys are not stored in `TurnResult`, `SessionState`, `logSummary`, prompts, or saved sessions.
-- Proxy mode is not implemented. If added later, it must be opt-in and must warn: **player API keys pass through the proxy server**.
-
-## Storage Modes
-
-- `sessionOnly` is the default and keeps the key in memory only.
-- `deviceIndexedDb` stores the key as plain IndexedDB data and must show: **공용 기기에서는 API Key를 저장하지 마세요.**
-- `deviceIndexedDbEncrypted` requires a user PIN/passphrase, derives an AES-GCM key with PBKDF2-SHA256, and stores provider-specific random salt and IV.
-- PIN/passphrase is never stored. Encrypted save fails if no PIN/passphrase is provided.
-
-## API Key Test Flow
-
-1. The player selects a provider: Groq, Gemini, OpenRouter, or Custom OpenAI-compatible.
-2. The player enters the API Key and optional model/endpoint.
-3. The player selects one of the three storage modes.
-4. The browser calls `testClientApiKey(settings)` directly against the provider adapter.
-5. Success stores the key with the selected persistence mode.
-6. Failure does not store the key and shows a message in the API settings screen.
-
-Provider tests can fail because of an invalid key, model/endpoint mismatch, rate limits, or browser CORS policy. The app must present CORS failure as a possible browser/provider limitation rather than silently saving the key.
-
-## No Local LLM
-
-Local LLM, Ollama, llama.cpp, GPT4All, and WebLLM are not used.
+- ManTRPG 기본 구조는 **BYOK(Bring Your Own Key)** 입니다.
+- 개발자/운영자 환경변수 API Key를 기본 LLM 호출에 사용하지 않습니다.
+- API Key 없이도 템플릿 GM, 로컬 파서, TypeScript 전투 엔진으로 기본 플레이가 가능합니다.
+- 플레이어가 Provider API Key를 직접 입력한 경우에만 해당 Provider 계정에서 비용이 발생할 수 있습니다.
+- 로컬 LLM은 사용하지 않습니다.
+- 저장 기본값은 `sessionOnly`이며, 기기 저장은 PBKDF2 + AES-GCM 암호화 저장만 기본 UI에서 제공합니다.
+- PIN/passphrase는 저장하지 않으며, 원문 API Key는 설정 export, prompt payload, usage log에 포함하지 않습니다.
+- Worker `/llm`은 direct BYOK 기본 모드에서 사용하지 않습니다. `/proxy/llm`은 명시적 opt-in이며 API Key가 Worker를 통과할 수 있음을 UI/문서에서 경고해야 합니다.

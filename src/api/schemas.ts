@@ -2,7 +2,7 @@ export const actionIntents = ['attack', 'skill', 'magic', 'item', 'defend', 'tal
 export const targets = ['enemy', 'self', 'none'] as const;
 export const scenes = ['combat', 'rest', 'dialogue'] as const;
 export const grades = ['criticalSuccess', 'success', 'fail', 'criticalFail'] as const;
-export const llmTasks = ['interpret', 'narrate', 'summarize', 'generateSkill'] as const;
+export const llmTasks = ['interpret', 'enemy-action', 'narrate', 'compact-summary', 'generate-skill', 'summarize', 'generateSkill'] as const;
 export const providers = ['groq', 'gemini', 'openrouter', 'customOpenAI'] as const;
 
 export type ActionIntent = typeof actionIntents[number];
@@ -63,11 +63,25 @@ export interface EngineResult {
   messageHint: string;
 }
 
+export interface EnemyActionIntent {
+  intent: 'attack' | 'guard' | 'wait' | 'pressure';
+  style: 'aggressive' | 'cautious' | 'desperate';
+  hint: string;
+}
+
 export interface EnemyDecision {
-  intent: 'attack';
+  intent: 'attack' | 'guard' | 'wait' | 'pressure';
   target: 'player';
   method: string;
   reasonTag: string;
+  llmIntent?: EnemyActionIntent;
+}
+
+export interface GeneratedSkillDraft {
+  name: string;
+  summary: string;
+  flavor: string;
+  tags: readonly string[];
 }
 
 export interface NarrationResult {
@@ -83,7 +97,7 @@ export interface SessionSummary {
     weapon: string;
     condition: 'normal' | 'wounded' | 'exhausted' | 'down';
   };
-  enemy: { hp: string; condition: 'normal' | 'wounded' | 'defeated' } | null;
+  enemy: { hint: string; condition: 'normal' | 'wounded' | 'defeated' } | null;
   availableActions: readonly string[];
 }
 
@@ -110,6 +124,8 @@ export type LlmCallResult = {
   narration?: NarrationResult;
   summary?: string;
   generatedText?: string;
+  enemyAction?: EnemyActionIntent;
+  generatedSkillDraft?: GeneratedSkillDraft;
   usage?: LlmUsageEstimate;
   error?: string;
 };
@@ -274,15 +290,34 @@ export const EngineResultSchema: Schema<EngineResult> = schema((value) => {
   };
 });
 
+export const EnemyActionIntentSchema: Schema<EnemyActionIntent> = schema((value) => {
+  const record = strictRecord(value, ['intent', 'style', 'hint'], 'EnemyActionIntent');
+  return {
+    intent: enumValue(record.intent, ['attack', 'guard', 'wait', 'pressure'] as const, 'intent'),
+    style: enumValue(record.style, ['aggressive', 'cautious', 'desperate'] as const, 'style'),
+    hint: nonEmptyString(record.hint, 'hint').slice(0, 40),
+  };
+});
+
 export const EnemyDecisionSchema: Schema<EnemyDecision> = schema((value) => {
   const record = requiredRecord(value, 'EnemyDecision');
-  if (record.intent !== 'attack') fail('intent must be attack');
   if (record.target !== 'player') fail('target must be player');
   return {
-    intent: 'attack',
+    intent: enumValue(record.intent, ['attack', 'guard', 'wait', 'pressure'] as const, 'intent'),
     target: 'player',
     method: nonEmptyString(record.method, 'method'),
     reasonTag: nonEmptyString(record.reasonTag, 'reasonTag'),
+    llmIntent: optionalSchema(record.llmIntent, EnemyActionIntentSchema, 'llmIntent'),
+  };
+});
+
+export const GeneratedSkillDraftSchema: Schema<GeneratedSkillDraft> = schema((value) => {
+  const record = strictRecord(value, ['name', 'summary', 'flavor', 'tags'], 'GeneratedSkillDraft');
+  return {
+    name: nonEmptyString(record.name, 'name').slice(0, 40),
+    summary: nonEmptyString(record.summary, 'summary').slice(0, 120),
+    flavor: (typeof record.flavor === 'string' && record.flavor.length > 0 ? record.flavor : nonEmptyString(record.summary, 'summary')).slice(0, 160),
+    tags: stringArray(record.tags, 'tags', { max: 5, nonEmpty: true }),
   };
 });
 
@@ -306,7 +341,7 @@ export const SessionSummarySchema: Schema<SessionSummary> = schema((value) => {
       weapon: nonEmptyString(player.weapon, 'player.weapon'),
       condition: enumValue(player.condition, ['normal', 'wounded', 'exhausted', 'down'] as const, 'player.condition'),
     },
-    enemy: enemy ? { hp: nonEmptyString(enemy.hp, 'enemy.hp'), condition: enumValue(enemy.condition, ['normal', 'wounded', 'defeated'] as const, 'enemy.condition') } : null,
+    enemy: enemy ? { hint: nonEmptyString(enemy.hint, 'enemy.hint'), condition: enumValue(enemy.condition, ['normal', 'wounded', 'defeated'] as const, 'enemy.condition') } : null,
     availableActions: stringArray(record.availableActions, 'availableActions'),
   };
 });
@@ -349,13 +384,16 @@ export const LlmCallResultSchema: Schema<LlmCallResult> = schema((value) => {
     narration: optionalSchema(record.narration, NarrationResultSchema, 'narration'),
     summary: optionalNonEmptyString(record.summary, 'summary'),
     generatedText: optionalNonEmptyString(record.generatedText, 'generatedText'),
+    enemyAction: optionalSchema(record.enemyAction, EnemyActionIntentSchema, 'enemyAction'),
+    generatedSkillDraft: optionalSchema(record.generatedSkillDraft, GeneratedSkillDraftSchema, 'generatedSkillDraft'),
     usage: optionalSchema(record.usage, LlmUsageEstimateSchema, 'usage'),
     error: optionalNonEmptyString(record.error, 'error'),
   };
   if (result.ok && result.task === 'interpret' && !result.parsedAction) fail('interpret result requires parsedAction');
   if (result.ok && result.task === 'narrate' && !result.narration) fail('narrate result requires narration');
-  if (result.ok && result.task === 'summarize' && !result.summary) fail('summarize result requires summary');
-  if (result.ok && result.task === 'generateSkill' && !result.generatedText) fail('generateSkill result requires generatedText');
+  if (result.ok && (result.task === 'summarize' || result.task === 'compact-summary') && !result.summary) fail('summary result requires summary');
+  if (result.ok && result.task === 'enemy-action' && !result.enemyAction) fail('enemy-action result requires enemyAction');
+  if (result.ok && (result.task === 'generateSkill' || result.task === 'generate-skill') && !result.generatedSkillDraft && !result.generatedText) fail('generate-skill result requires generatedSkillDraft');
   return result;
 });
 

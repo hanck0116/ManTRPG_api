@@ -44,8 +44,8 @@ export function runPlayerAction(session: SessionState, action: ParsedAction): En
 }
 
 export function runEnemyDecision(session: SessionState, decision: EnemyDecision): EngineResult {
-  if (decision.intent === 'attack') return enemyAttack(session);
-  return blockedAction(session, 'enemy_decision_not_supported');
+  if (decision.intent === 'attack' || decision.intent === 'pressure') return enemyAttack(session);
+  return blockedAction(session, `enemy_${decision.intent}`);
 }
 
 export async function handleTurn(inputBody: PlayerInput): Promise<TurnResult> {

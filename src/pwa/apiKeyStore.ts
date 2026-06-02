@@ -4,27 +4,26 @@ import type { ApiKeyPersistence } from './settings.js';
 
 export interface StoredApiKeyRecord {
   provider: LlmProvider;
-  encrypted: boolean;
+  encrypted: true;
   value: string;
-  iv?: string;
-  salt?: string;
-  kdf?: 'PBKDF2-SHA256';
-  warning?: string;
+  iv: string;
+  salt: string;
+  kdf: 'PBKDF2-SHA256';
   savedAt: string;
 }
 
-export const publicDeviceWarning = '공용 기기에서는 API Key를 저장하지 마세요. deviceIndexedDb는 평문 저장입니다.';
+export const publicDeviceWarning = '기기 저장은 PBKDF2 + AES-GCM 암호화 저장만 지원합니다. PIN/passphrase는 저장하지 않습니다.';
+export const unsafeDeviceWarning = '개발 전용 unsafe 평문 저장은 기본 UI에서 숨겨져 있으며 프로덕션 기본 흐름에서 사용하지 않습니다.';
 const sessionKeys = new Map<LlmProvider, string>();
 
-export function setSessionApiKey(provider: LlmProvider, apiKey: string): void { sessionKeys.set(provider, apiKey); }
+export function setSessionApiKey(provider: LlmProvider, apiKey: string): void { apiKey.trim() ? sessionKeys.set(provider, apiKey) : sessionKeys.delete(provider); }
 export function getSessionApiKey(provider: LlmProvider): string | null { return sessionKeys.get(provider) ?? null; }
 export function clearSessionApiKey(provider?: LlmProvider): void { if (provider) sessionKeys.delete(provider); else sessionKeys.clear(); }
 
 export async function saveApiKey(provider: LlmProvider, apiKey: string, persistence: ApiKeyPersistence, passphrase?: string): Promise<void> {
   if (persistence === 'sessionOnly') { setSessionApiKey(provider, apiKey); return; }
-  const record = persistence === 'deviceIndexedDbEncrypted'
-    ? await encryptApiKeyRecord(provider, apiKey, passphrase)
-    : { provider, encrypted: false, value: apiKey, warning: publicDeviceWarning, savedAt: new Date().toISOString() } satisfies StoredApiKeyRecord;
+  if (persistence === 'deviceIndexedDb') throw new Error('unsafe_plaintext_storage_disabled');
+  const record = await encryptApiKeyRecord(provider, apiKey, passphrase);
   const db = await openManTrpgDb();
   const tx = db.transaction(keyStore, 'readwrite');
   tx.objectStore(keyStore).put(record);
@@ -35,6 +34,7 @@ export async function saveApiKey(provider: LlmProvider, apiKey: string, persiste
 export async function loadApiKey(provider: LlmProvider, passphrase?: string): Promise<string | null> {
   const sessionKey = getSessionApiKey(provider);
   if (sessionKey) return sessionKey;
+  if (!passphrase?.trim()) return null;
   const db = await openManTrpgDb();
   const tx = db.transaction(keyStore, 'readonly');
   const request = tx.objectStore(keyStore).get(provider);
@@ -44,8 +44,7 @@ export async function loadApiKey(provider: LlmProvider, passphrase?: string): Pr
   });
   await txDone(tx);
   db.close();
-  if (!record) return null;
-  return record.encrypted ? decryptApiKeyRecord(record, passphrase) : record.value;
+  return record ? decryptApiKeyRecord(record, passphrase) : null;
 }
 
 export async function deleteApiKey(provider?: LlmProvider): Promise<void> {
@@ -91,7 +90,6 @@ export async function encryptApiKeyRecord(provider: LlmProvider, apiKey: string,
 
 export async function decryptApiKeyRecord(record: StoredApiKeyRecord, passphrase?: string): Promise<string> {
   const pin = requirePassphrase(passphrase);
-  if (!globalThis.crypto?.subtle || !record.iv || !record.salt) throw new Error('web_crypto_unavailable');
   const encrypted = base64ToBytes(record.value);
   const iv = base64ToBytes(record.iv);
   const salt = base64ToBytes(record.salt);

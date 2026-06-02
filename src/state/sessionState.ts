@@ -21,7 +21,7 @@ export interface MinimalApiState {
   scene: Scene;
   turn: number;
   player: PlayerSummary;
-  enemy: { hp: string; condition: EnemyState['condition'] } | null;
+  enemy: { hint: string; condition: EnemyState['condition'] } | null;
   availableActions: readonly string[];
   candidateIds: {
     skills: readonly string[];
@@ -61,7 +61,7 @@ export function summarizeSession(session: SessionState): MinimalApiState {
     player: summarizePlayer(session.player),
     enemy: session.enemy
       ? {
-          hp: `${session.enemy.currentHp}/${session.enemy.hp}`,
+          hint: enemyVisibleHint(session.enemy),
           condition: session.enemy.condition,
         }
       : null,
@@ -72,4 +72,10 @@ export function summarizeSession(session: SessionState): MinimalApiState {
       items: Object.entries(session.player.inventory).filter(([, count]) => count > 0).map(([itemId]) => itemId).slice(0, 5),
     },
   };
+}
+
+export function enemyVisibleHint(enemy: EnemyState): string {
+  if (enemy.condition === 'defeated') return '쓰러진 기척';
+  if (enemy.condition === 'wounded') return '상처 입은 듯함';
+  return '위협적인 기척';
 }
