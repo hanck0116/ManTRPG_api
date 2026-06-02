@@ -8,11 +8,11 @@ export interface SkillDefinition {
 }
 
 export const skillCatalog: Record<string, SkillDefinition> = {
-  reaping_arc: {
-    id: 'reaping_arc',
+  SK_REAPING_ARC: {
+    id: 'SK_REAPING_ARC',
     name: '수확의 호',
     costMp: 3,
-    targetModifier: -1,
+    targetModifier: 5,
     damageMultiplier: 1.5,
     tags: ['physical', 'slash', 'skill'],
   },

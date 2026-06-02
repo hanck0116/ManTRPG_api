@@ -9,13 +9,13 @@ export interface EnemyTemplate {
 }
 
 export const enemyCatalog: Record<string, EnemyTemplate> = {
-  stray_shadow: {
-    id: 'stray_shadow',
+  ENEMY_STRAY_SHADOW: {
+    id: 'ENEMY_STRAY_SHADOW',
     name: '떠도는 그림자',
     hp: 20,
     attack: 5,
     defense: 1,
-    target: 14,
+    target: 60,
     tags: ['single_enemy', 'normal'],
   },
 };
