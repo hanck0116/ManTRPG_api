@@ -21,6 +21,7 @@ export interface TurnResult {
     tasks: LlmCallResult['task'][];
     fallback: boolean;
     usageEstimate: LlmCallResult['usage'] | null;
+    skippedReason?: string;
   };
 }
 

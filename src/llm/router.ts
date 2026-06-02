@@ -20,7 +20,7 @@ export function hasApiKey(request: LlmRequest): boolean {
 export function shouldCallLlm(request: LlmRequest): boolean {
   if (!hasApiKey(request)) return false;
   if (request.task === 'interpret') return request.text.trim().length > 0;
-  if (request.task === 'narrate') return request.engineResult.ok && (request.engineResult.battleEnded || request.engineResult.tags.includes('reward') || request.engineResult.tags.includes('scene_transition'));
+  if (request.task === 'narrate') return request.engineResult.ok && (request.engineResult.battleEnded || request.engineResult.tags.includes('reward') || request.engineResult.tags.includes('scene_transition') || request.engineResult.tags.includes('generated_skill') || request.engineResult.tags.includes('generated_magic'));
   if (request.task === 'summarize') return request.logLines.length >= 8;
   if (request.task === 'generateSkill') return request.candidateIds.length > 0;
   return false;

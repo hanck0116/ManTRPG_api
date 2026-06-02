@@ -89,13 +89,27 @@ The API never creates dice, damage, healing, rewards, enemy counts, HP/MP mutati
 
 ## PWA Run
 
-This repository currently uses TypeScript build scripts. Serve `index.html`, `src/client/main.ts`, and `public/` with a Vite/static dev server when integrating the web shell. The shell includes `manifest.webmanifest`, `service-worker.js`, a play screen, API settings screen, and session screen.
+```bash
+npm install
+npm run dev:web
+```
+
+Open the Vite URL on a phone-sized viewport. The mobile shell uses `index.html`, `src/client/main.ts`, and `public/` and builds to `dist-web`. The shell includes `manifest.webmanifest`, `service-worker.js`, a play screen, API settings screen, and session screen.
+
+### BYOK API Key Test
+
+1. Open the API tab.
+2. Select Groq, Gemini, OpenRouter, or Custom OpenAI-compatible.
+3. Enter an API Key plus optional model/endpoint.
+4. Choose `sessionOnly`, `deviceIndexedDb`, or `deviceIndexedDbEncrypted`.
+5. Press **API Key 테스트/저장**. The browser calls the provider test endpoint directly.
+6. On success the key is stored by the selected mode; on failure it is not stored and the screen shows a CORS/provider configuration warning.
 
 ## Server Run
 
 ```bash
 npm install
-npm run dev
+npm run dev:server
 curl http://localhost:3000/health
 curl -X POST http://localhost:3000/turn -H 'Content-Type: application/json' -d '{"sessionId":"demo","text":"/attack"}'
 ```
@@ -122,6 +136,5 @@ npm run typecheck
 ## Remaining Work
 
 - Replace staging catalog data with the full V18 catalog.
-- Add real web bundler/dev-server wiring for production PWA hosting.
 - Add browser E2E tests for the API settings form and IndexedDB flows.
 - Add an explicitly separate opt-in server proxy module if proxy mode is needed.
