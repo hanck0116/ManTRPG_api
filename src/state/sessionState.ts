@@ -24,7 +24,7 @@ export interface MinimalApiState {
   availableActions: string[];
 }
 
-export function createEnemyState(enemyId = 'stray_shadow'): EnemyState {
+export function createEnemyState(enemyId = 'ENEMY_STRAY_SHADOW'): EnemyState {
   const template = enemyCatalog[enemyId];
   if (!template) {
     throw new Error(`Unknown enemy id: ${enemyId}`);

@@ -11,15 +11,15 @@ export interface Equipment {
 }
 
 export const equipmentCatalog: Record<string, Equipment> = {
-  scythe_basic: {
-    id: 'scythe_basic',
+  EQ_WEAPON_SCYTHE_BASIC: {
+    id: 'EQ_WEAPON_SCYTHE_BASIC',
     name: '낫',
     slot: 'main_weapon',
     attackBonus: 2,
     tags: ['physical', 'slash'],
   },
-  coat_traveler: {
-    id: 'coat_traveler',
+  EQ_ARMOR_TRAVELER_COAT: {
+    id: 'EQ_ARMOR_TRAVELER_COAT',
     name: '여행자의 코트',
     slot: 'armor',
     defenseBonus: 1,

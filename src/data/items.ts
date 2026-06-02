@@ -9,8 +9,8 @@ export interface ItemDefinition {
 }
 
 export const itemCatalog: Record<string, ItemDefinition> = {
-  herb_small: {
-    id: 'herb_small',
+  IT_HERB_SMALL: {
+    id: 'IT_HERB_SMALL',
     name: '작은 약초',
     kind: 'consumable',
     healHp: 6,

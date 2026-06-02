@@ -12,6 +12,6 @@ export function grantCombatReward(session: SessionState): RewardResult {
   }
 
   session.player.coins += 8;
-  session.player.inventory.herb_small = (session.player.inventory.herb_small ?? 0) + 1;
-  return { coins: 8, items: { herb_small: 1 }, tags: ['reward', 'combat_end'] };
+  session.player.inventory.IT_HERB_SMALL = (session.player.inventory.IT_HERB_SMALL ?? 0) + 1;
+  return { coins: 8, items: { IT_HERB_SMALL: 1 }, tags: ['reward', 'combat_end'] };
 }

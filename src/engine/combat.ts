@@ -1,5 +1,6 @@
 import type { SkillDefinition } from '../data/skills.js';
 import type { MagicDefinition } from '../data/magic.js';
+import type { CheckResult } from './dice.js';
 import type { ParsedAction } from './judgment.js';
 import { judgeAction } from './judgment.js';
 import { getEquipmentAttackBonus, getEquipmentDefenseBonus } from './inventory.js';
@@ -12,8 +13,12 @@ export interface EngineResult {
   ok: boolean;
   scene: Scene;
   result: 'success' | 'fail' | 'partial' | 'blocked';
+  check: CheckResult | null;
   roll: number | null;
   target: number | null;
+  total: number | null;
+  grade: CheckResult['grade'] | null;
+  success: boolean;
   damage: number;
   healing: number;
   playerHp: number;
@@ -40,14 +45,18 @@ function blocked(session: SessionState, reason: string): EngineResult {
     ok: false,
     scene: session.scene,
     result: 'blocked',
+    check: null,
     roll: null,
     target: null,
+    total: null,
+    grade: null,
+    success: false,
     damage: 0,
     healing: 0,
     playerHp: session.player.hp,
     playerMp: session.player.mp,
     enemyHp: session.enemy?.currentHp ?? null,
-    battleEnded: false,
+    battleEnded: session.player.condition === 'down' || session.enemy?.condition === 'defeated',
     tags: ['blocked', reason],
     messageHint: reason,
   };
@@ -55,34 +64,42 @@ function blocked(session: SessionState, reason: string): EngineResult {
 
 function applyPlayerHit(session: SessionState, action: ParsedAction, damage: number, extraTags: string[], targetOverride?: number, modifier = 0, rng?: () => number): EngineResult {
   if (!session.enemy) return blocked(session, 'enemy_missing');
+  if (session.enemy.condition === 'defeated') return blocked(session, 'battle_already_ended');
+  if (session.player.condition === 'down') return blocked(session, 'player_down');
 
   const judgment = judgeAction({ action, player: session.player, enemy: session.enemy, target: targetOverride, modifier, rng });
-  const dealt = judgment.result === 'success' ? damage : 0;
+  if (!judgment.ok || !judgment.check) return blocked(session, judgment.result);
+
+  const dealt = judgment.success ? damage : 0;
   session.enemy.currentHp -= dealt;
   clampEnemy(session.enemy);
-  const battleEnded = session.enemy.condition === 'defeated';
+  const battleEnded = session.enemy.currentHp <= 0;
   session.logSummary.push(`${action.intent}:${judgment.result}:${dealt}`);
 
   return {
     ok: true,
     scene: session.scene,
-    result: judgment.result,
-    roll: judgment.roll.total,
+    result: judgment.success ? 'success' : 'fail',
+    check: judgment.check,
+    roll: judgment.roll,
     target: judgment.target,
+    total: judgment.total,
+    grade: judgment.grade,
+    success: judgment.success,
     damage: dealt,
     healing: 0,
     playerHp: session.player.hp,
     playerMp: session.player.mp,
     enemyHp: session.enemy.currentHp,
     battleEnded,
-    tags: [...judgment.tags, ...extraTags, ...(battleEnded ? ['battle_end'] : [])],
+    tags: [...judgment.tags, ...extraTags, ...(dealt > 0 ? ['hit'] : []), ...(battleEnded ? ['battle_end'] : [])],
     messageHint: dealt > 0 ? 'player_hit_enemy' : 'player_attack_missed',
   };
 }
 
 export function playerAttack(session: SessionState, action: ParsedAction, rng?: () => number): EngineResult {
   if (!session.enemy) return blocked(session, 'enemy_missing');
-  return applyPlayerHit(session, action, baseDamage(session.player, session.enemy), ['hit', 'physical'], undefined, 0, rng);
+  return applyPlayerHit(session, action, baseDamage(session.player, session.enemy), ['physical'], undefined, 0, rng);
 }
 
 export function playerSkill(session: SessionState, action: ParsedAction, rng?: () => number): EngineResult {
@@ -110,25 +127,36 @@ export function playerMagic(session: SessionState, action: ParsedAction, rng?: (
 
 export function enemyAttack(session: SessionState, rng?: () => number): EngineResult {
   if (!session.enemy) return blocked(session, 'enemy_missing');
-  const action: ParsedAction = { intent: 'attack', target: 'self', skillId: null, magicId: null, itemId: null, method: 'enemy_attack', rawText: 'enemy attack' };
-  const judgment = judgeAction({ action, player: session.player, enemy: session.enemy, target: 12, stat: 'agility', rng });
-  const damage = judgment.result === 'success' ? Math.max(1, session.enemy.attack - getEquipmentDefenseBonus(session.player)) : 0;
+  if (session.enemy.condition === 'defeated') return blocked(session, 'enemy_defeated');
+  if (session.player.condition === 'down') return blocked(session, 'player_down');
+
+  const action: ParsedAction = { intent: 'attack', target: 'self', skillId: null, magicId: null, itemId: null, method: 'enemy_basic_attack', rawText: 'enemy attack' };
+  const judgment = judgeAction({ action, player: session.player, enemy: session.enemy, target: 60, stat: 'agility', rng });
+  if (!judgment.ok || !judgment.check) return blocked(session, judgment.result);
+
+  const damage = judgment.success ? Math.max(1, session.enemy.attack - getEquipmentDefenseBonus(session.player)) : 0;
   session.player.hp = Math.max(0, session.player.hp - damage);
   updatePlayerCondition(session.player);
+  const battleEnded = session.player.hp <= 0;
+  session.logSummary.push(`enemy:${judgment.result}:${damage}`);
 
   return {
     ok: true,
     scene: session.scene,
-    result: judgment.result,
-    roll: judgment.roll.total,
+    result: judgment.success ? 'success' : 'fail',
+    check: judgment.check,
+    roll: judgment.roll,
     target: judgment.target,
+    total: judgment.total,
+    grade: judgment.grade,
+    success: judgment.success,
     damage,
     healing: 0,
     playerHp: session.player.hp,
     playerMp: session.player.mp,
     enemyHp: session.enemy.currentHp,
-    battleEnded: session.player.condition === 'down',
-    tags: [judgment.result, 'enemy_action', 'physical'],
+    battleEnded,
+    tags: [judgment.success ? 'success' : 'fail', judgment.grade ?? 'fail', 'enemy_action', 'physical', ...(battleEnded ? ['battle_end'] : [])],
     messageHint: damage > 0 ? 'enemy_hit_player' : 'enemy_missed',
   };
 }
@@ -139,15 +167,23 @@ export function defend(session: SessionState): EngineResult {
     ok: true,
     scene: session.scene,
     result: 'success',
+    check: null,
     roll: null,
     target: null,
+    total: null,
+    grade: null,
+    success: true,
     damage: 0,
     healing: 0,
     playerHp: session.player.hp,
     playerMp: session.player.mp,
     enemyHp: session.enemy?.currentHp ?? null,
-    battleEnded: false,
+    battleEnded: session.enemy?.condition === 'defeated' || session.player.condition === 'down',
     tags: ['defend', 'guard'],
     messageHint: 'player_defends',
   };
+}
+
+export function blockedAction(session: SessionState, reason: string): EngineResult {
+  return blocked(session, reason);
 }
