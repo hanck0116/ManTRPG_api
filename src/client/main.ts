@@ -93,5 +93,8 @@ function bindSession() {
   app.querySelector<HTMLButtonElement>('#delete-save')?.addEventListener('click', async () => { await deleteClientSession(uiState.sessionId); uiState.turn = null; render('play'); });
 }
 
-if ('serviceWorker' in navigator) void navigator.serviceWorker.register('/service-worker.js');
+if ('serviceWorker' in navigator) {
+  const serviceWorkerUrl = new URL('service-worker.js', import.meta.env.BASE_URL ? new URL(import.meta.env.BASE_URL, window.location.href) : window.location.href);
+  void navigator.serviceWorker.register(serviceWorkerUrl.href);
+}
 render();
