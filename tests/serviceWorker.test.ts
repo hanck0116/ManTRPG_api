@@ -17,8 +17,16 @@ describe('service worker shell caching', () => {
     expect(source).toContain('generativelanguage.googleapis.com');
   });
 
-  it('has navigation fallback to index.html', () => {
+  it('has navigation fallback to the scoped index.html shell', () => {
     expect(source).toContain('networkFirstNavigation');
-    expect(source).toContain("cache.match('/index.html')");
+    expect(source).toContain("cache.match(shellUrl('index.html'))");
+    expect(source).toContain("cache.match(shellUrl('./'))");
+    expect(source).not.toContain("cache.match('/index.html')");
+  });
+
+  it('resolves shell files relative to the service worker scope', () => {
+    expect(source).toContain('self.registration.scope');
+    expect(source).toContain('const shellUrl = (path) => new URL(path, self.registration.scope).href');
+    expect(source).toContain('url.pathname.startsWith(BASE_PATH)');
   });
 });
