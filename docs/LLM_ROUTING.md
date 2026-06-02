@@ -1,43 +1,23 @@
 # LLM Routing
 
-LLM use is optional BYOK GM assistance. No local LLM, Ollama, llama.cpp, GPT4All, or WebLLM path is used.
+LLM use is optional browser-side BYOK GM assistance. No local LLM, Ollama, llama.cpp, GPT4All, or WebLLM path is used.
 
 ## Providers
 
-- Groq: OpenAI-compatible chat completions adapter.
-- Gemini: Gemini `generateContent` adapter.
-- OpenRouter: OpenAI-compatible chat completions adapter.
-- Custom OpenAI-compatible endpoint: player-provided endpoint and model.
+- Groq
+- Gemini
+- OpenRouter
+- Custom OpenAI-compatible endpoint
 
 ## Tasks
 
-| Task | Purpose | API allowed? | Fallback |
+| Task | Purpose | Call condition | Fallback |
 | --- | --- | --- | --- |
-| `interpret` | Convert unresolved natural language to `ParsedAction` JSON. | Only when the local parser returns `unknown` and the player provided a key. | Keep `unknown` and block safely. |
-| `narrate` | Convert `EngineResult` into short GM narration. | Only for important scenes, rewards, scene transitions, or battle end. | `templateNarrator`. |
-| `summarize` | Compress long logs into a session summary. | Only when logs are long enough to need compaction. | Keep local short log summary. |
-| `generateSkill` | Generate short flavor text for a new skill or magic. | Only with candidate IDs/theme and no combat math. | Template description. |
+| `interpret` | Unknown natural language to `ParsedAction`. | Local parser returns `unknown` and browser has a key. | Keep `unknown`. |
+| `narrate` | Short narration from engine JSON. | Important scene/reward/battle end policy. | `templateNarrator`. |
+| `summarize` | Compact long logs. | Long log only. | Local log summary. |
+| `generateSkill` | Flavor only. | Candidate IDs only. | Template text. |
 
-## Data Boundary
+## Proxy Warning
 
-Allowed API input:
-
-- `MinimalApiState`.
-- `EngineResult` already created by the local engine.
-- Current raw text for `interpret`.
-- Needed candidate IDs only.
-- Short log summary when summarizing.
-
-Forbidden API input:
-
-- Full character sheets.
-- Full rules.
-- Full skill, magic, equipment, item, or enemy catalogs.
-- API keys in prompt content.
-
-Forbidden API output authority:
-
-- Dice rolls.
-- Damage, healing, rewards, HP/MP mutation.
-- Enemy counts.
-- Boss mechanics.
+The default mode does not send API keys to the ManTRPG server. If a deployment adds a server proxy, the UI and docs must warn that player API keys pass through that proxy server.

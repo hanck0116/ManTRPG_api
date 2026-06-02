@@ -4,6 +4,7 @@ import { basePlayerStats, type Stats } from '../data/stats.js';
 export interface PlayerState {
   id: string;
   name: string;
+  level: number;
   hp: number;
   maxHp: number;
   mp: number;
@@ -19,6 +20,13 @@ export interface PlayerState {
   magic: string[];
   inventory: Record<string, number>;
   coins: number;
+  externalSkill: number;
+  internalSkill: number;
+  swordAura: number;
+  multicasting: number;
+  traits: string[];
+  techniques: string[];
+  originalMana: number;
   condition: 'normal' | 'wounded' | 'exhausted' | 'down';
 }
 
@@ -33,6 +41,7 @@ export function createDefaultPlayerState(): PlayerState {
   return {
     id: 'player',
     name: '하르벤',
+    level: 1,
     hp: 40,
     maxHp: 40,
     mp: 25,
@@ -48,6 +57,13 @@ export function createDefaultPlayerState(): PlayerState {
     magic: ['MG_EMBER_01'],
     inventory: { IT_HERB_SMALL: 1 },
     coins: 0,
+    externalSkill: 0,
+    internalSkill: 0,
+    swordAura: 0,
+    multicasting: 0,
+    traits: [],
+    techniques: [],
+    originalMana: 0,
     condition: 'normal',
   };
 }

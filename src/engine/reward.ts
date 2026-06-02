@@ -11,7 +11,9 @@ export function grantCombatReward(session: SessionState): RewardResult {
     return { coins: 0, items: {}, tags: ['blocked', 'enemy_alive'] };
   }
 
-  session.player.coins += 8;
+  const appearanceBonus = Math.max(0, Math.floor((session.player.stats.appearance - 50) / 20));
+  const coins = 8 + appearanceBonus;
+  session.player.coins += coins;
   session.player.inventory.IT_HERB_SMALL = (session.player.inventory.IT_HERB_SMALL ?? 0) + 1;
-  return { coins: 8, items: { IT_HERB_SMALL: 1 }, tags: ['reward', 'combat_end'] };
+  return { coins, items: { IT_HERB_SMALL: 1 }, tags: ['reward', 'combat_end', 'appearance_scaled'] };
 }

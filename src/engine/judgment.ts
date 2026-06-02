@@ -1,4 +1,4 @@
-import { rollCheck, type CheckResult } from './dice.js';
+import { rollAbsoluteCheck, type CheckResult } from './dice.js';
 import { getEquipmentAttackBonus } from './inventory.js';
 import type { PlayerState } from '../state/playerState.js';
 import type { EnemyState } from '../state/sessionState.js';
@@ -30,8 +30,8 @@ export interface JudgmentResult {
   result: 'success' | 'fail' | 'blocked' | 'unknown_action';
   check: CheckResult | null;
   roll: number | null;
-  total: number | null;
-  target: number | null;
+  effectiveTarget: number | null;
+  baseTarget: number | null;
   modifier: number;
   grade: CheckResult['grade'] | null;
   success: boolean;
@@ -47,8 +47,8 @@ export function judgeAction(input: JudgmentInput): JudgmentResult {
       result: 'unknown_action',
       check: null,
       roll: null,
-      total: null,
-      target: null,
+      effectiveTarget: null,
+      baseTarget: null,
       modifier: 0,
       grade: null,
       success: false,
@@ -62,8 +62,8 @@ export function judgeAction(input: JudgmentInput): JudgmentResult {
       result: 'blocked',
       check: null,
       roll: null,
-      total: null,
-      target: null,
+      effectiveTarget: null,
+      baseTarget: null,
       modifier: 0,
       grade: null,
       success: false,
@@ -71,20 +71,19 @@ export function judgeAction(input: JudgmentInput): JudgmentResult {
     };
   }
 
-  const stat = input.stat ?? (input.action.intent === 'magic' ? 'mind' : input.action.intent === 'defend' ? 'endurance' : 'strength');
-  const statBonus = input.player.stats[stat] ?? 0;
+  const stat = input.stat ?? (input.action.intent === 'magic' ? 'intelligence' : input.action.intent === 'defend' ? 'constitution' : 'strength');
+  const baseTarget = input.target ?? input.player.stats[stat] ?? input.enemy.target;
   const equipmentBonus = input.action.intent === 'attack' || input.action.intent === 'skill' ? getEquipmentAttackBonus(input.player) : 0;
-  const modifier = statBonus + equipmentBonus + (input.modifier ?? 0);
-  const target = input.target ?? input.enemy.target;
-  const check = rollCheck({ target, modifier, rng: input.rng });
+  const modifier = equipmentBonus + (input.modifier ?? 0);
+  const check = rollAbsoluteCheck({ baseTarget, modifier, rng: input.rng });
 
   return {
     ok: true,
     result: check.success ? 'success' : 'fail',
     check,
     roll: check.roll,
-    total: check.total,
-    target: check.target,
+    effectiveTarget: check.effectiveTarget,
+    baseTarget: check.baseTarget,
     modifier: check.modifier,
     grade: check.grade,
     success: check.success,

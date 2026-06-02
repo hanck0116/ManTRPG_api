@@ -16,7 +16,7 @@ const attackAction = {
 describe('combat', () => {
   it('handles a successful single-enemy player attack', () => {
     const session = createSessionState('combat-test');
-    const result = playerAttack(session, attackAction, () => 0.95);
+    const result = playerAttack(session, attackAction, () => 0.1);
     expect(result.result).toBe('success');
     expect(result.damage).toBe(4);
     expect(result.enemyHp).toBe(16);
@@ -33,7 +33,7 @@ describe('combat', () => {
     const session = createSessionState('battle-end-test');
     if (!session.enemy) throw new Error('enemy missing');
     session.enemy.currentHp = 1;
-    const result = playerAttack(session, attackAction, () => 0.95);
+    const result = playerAttack(session, attackAction, () => 0.1);
 
     expect(result.battleEnded).toBe(true);
     expect(result.enemyHp).toBe(0);
